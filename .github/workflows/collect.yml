@@ -1,0 +1,59 @@
+name: Auslastung erfassen
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Code holen
+        uses: actions/checkout@v4
+
+      - name: Daten-Branch holen (oder neu anlegen)
+        run: |
+          git config --global user.name  "gym-monitor-bot"
+          git config --global user.email "gym-monitor-bot@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git clone --depth 1 --branch data "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" store
+          else
+            mkdir store && cd store && git init -b data
+            git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+          fi
+
+      - name: Auslastung abrufen
+        env:
+          DATA_DIR: store/data
+          REQUEST_URL:      ${{ secrets.REQUEST_URL }}
+          REQUEST_METHOD:   ${{ secrets.REQUEST_METHOD }}
+          REQUEST_HEADERS:  ${{ secrets.REQUEST_HEADERS }}
+          REQUEST_BODY:     ${{ secrets.REQUEST_BODY }}
+          VALUE_PATH:       ${{ secrets.VALUE_PATH }}
+          MAX_PATH:         ${{ secrets.MAX_PATH }}
+          STATIC_TOKEN:     ${{ secrets.STATIC_TOKEN }}
+          LOGIN_URL:        ${{ secrets.LOGIN_URL }}
+          LOGIN_HEADERS:    ${{ secrets.LOGIN_HEADERS }}
+          LOGIN_BODY:       ${{ secrets.LOGIN_BODY }}
+          LOGIN_TOKEN_PATH: ${{ secrets.LOGIN_TOKEN_PATH }}
+        run: python3 collect.py
+
+      - name: Speichern
+        run: |
+          cd store
+          git add data
+          git commit -q -m "Messwert $(date -u +%FT%TZ)" || exit 0
+          for i in 1 2 3; do
+            git push -q origin data && exit 0
+            git pull -q --rebase origin data || true
+          done
+          exit 1
