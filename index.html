@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Auslastung</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><rect x='6' y='18' width='4' height='8' rx='1' fill='white'/><rect x='14' y='12' width='4' height='14' rx='1' fill='white'/><rect x='22' y='6' width='4' height='20' rx='1' fill='white'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f2;
+  --surface: #fcfcfb;
+  --border: #e4e3df;
+  --text: #0b0b0b;
+  --text-2: #52514e;
+  --muted: #8a8984;
+  --grid: #ecebe7;
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --empty: #efeeea;
+  --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #6da7ec; --seq-4: #3987e5;
+  --seq-5: #256abf; --seq-6: #184f95; --seq-7: #0d366b;
+  --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110; --surface: #1a1a19; --border: #2c2c2a; --text: #f0efec;
+    --text-2: #c3c2b7; --muted: #8d8c85; --grid: #262624;
+    --s1: #3987e5; --s2: #d95926; --empty: #232321;
+    --seq-1: #1a2f4d; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5;
+    --seq-5: #6da7ec; --seq-6: #9ec5f4; --seq-7: #cde2fb;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface: #1a1a19; --border: #2c2c2a; --text: #f0efec;
+  --text-2: #c3c2b7; --muted: #8d8c85; --grid: #262624;
+  --s1: #3987e5; --s2: #d95926; --empty: #232321;
+  --seq-1: #1a2f4d; --seq-2: #184f95; --seq-3: #256abf; --seq-4: #3987e5;
+  --seq-5: #6da7ec; --seq-6: #9ec5f4; --seq-7: #cde2fb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
+h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: 15px; margin: 0 0 2px; }
+.sub { color: var(--text-2); font-size: 13px; margin: 0 0 14px; }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: none; color: var(--text-2); font: inherit; font-size: 13px; padding: 6px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--border); }
+.seg button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
+.grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; min-width: 0; }
+.span-3 { grid-column: span 3; } .span-4 { grid-column: span 4; } .span-6 { grid-column: span 6; }
+.span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
+@media (max-width: 860px) { .span-3 { grid-column: span 6; } .span-4, .span-6, .span-8 { grid-column: span 12; } }
+@media (max-width: 480px) { .span-3 { grid-column: span 12; } }
+.label { color: var(--text-2); font-size: 13px; }
+.big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.small { font-size: 13px; color: var(--text-2); }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.chart-box { position: relative; height: 280px; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 3px; border-radius: 2px; }
+/* Heatmap */
+.heat-wrap { overflow-x: auto; }
+.heat { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(22px, 1fr)); gap: 2px; min-width: 560px; }
+.heat div { font-size: 11px; color: var(--muted); text-align: center; }
+.heat .row { text-align: left; color: var(--text-2); font-size: 12px; align-self: center; }
+.heat .cell { height: 28px; border-radius: 4px; background: var(--empty); position: relative; cursor: default; }
+.heat .cell:hover { outline: 2px solid var(--text); outline-offset: 1px; z-index: 1; }
+.scale { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--muted); }
+.scale i { width: 22px; height: 10px; border-radius: 3px; display: inline-block; }
+/* Listen */
+ol.rank { list-style: none; margin: 8px 0 0; padding: 0; }
+ol.rank li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+ol.rank li:first-child { border-top: 0; }
+ol.rank .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--empty); overflow: hidden; }
+ol.rank .bar i { display: block; height: 100%; border-radius: 2px; }
+.num { font-variant-numeric: tabular-nums; font-weight: 600; }
+#tooltip { position: fixed; pointer-events: none; background: var(--text); color: var(--surface); font-size: 12px; padding: 6px 9px; border-radius: 6px; opacity: 0; transition: opacity .1s; z-index: 10; white-space: nowrap; }
+.msg { padding: 32px; text-align: center; color: var(--text-2); }
+.msg code { background: var(--empty); padding: 2px 6px; border-radius: 4px; }
+select { font: inherit; font-size: 13px; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
+table { border-collapse: collapse; font-size: 12px; width: 100%; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1 id="title">Studio Auslastung</h1>
+      <div class="small" id="updated">Lade Daten …</div>
+    </div>
+    <div class="controls">
+      <div class="seg" id="range" role="group" aria-label="Zeitraum">
+        <button data-days="14">2 Wochen</button>
+        <button data-days="42" aria-pressed="true">6 Wochen</button>
+        <button data-days="0">Alles</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="content" class="grid">
+    <div class="card span-12 msg" id="loading">Lade Messwerte …</div>
+  </div>
+</main>
+<div id="tooltip"></div>
+
+<script>
+const TZ = 'Europe/Berlin';
+const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const DAYS_LONG = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+const MIN_SAMPLES = 3;          // Mindestanzahl Messungen pro Zeitfenster fuer Rankings
+
+// ---------- Datenquelle bestimmen ----------
+function dataBase() {
+  const q = new URLSearchParams(location.search);
+  if (q.get('data')) return q.get('data').replace(/\/?$/, '/');
+  if (q.get('repo')) return `https://raw.githubusercontent.com/${q.get('repo')}/data/data/`;
+  if (location.hostname.endsWith('.github.io')) {
+    const owner = location.hostname.split('.')[0];
+    const repo = location.pathname.split('/').filter(Boolean)[0] || `${owner}.github.io`;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/data/data/`;
+  }
+  return './data/';
+}
+
+// ---------- Zeitzonen-Helfer ----------
+const fmtParts = new Intl.DateTimeFormat('de-DE', { timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' });
+const WD = { 'Mo.': 0, 'Di.': 1, 'Mi.': 2, 'Do.': 3, 'Fr.': 4, 'Sa.': 5, 'So.': 6, Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 };
+function local(d) {
+  const p = Object.fromEntries(fmtParts.formatToParts(d).map(x => [x.type, x.value]));
+  return { wd: WD[p.weekday], h: +p.hour, m: +p.minute, day: `${p.year}-${p.month}-${p.day}` };
+}
+const fmtTime = d => d.toLocaleString('de-DE', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const hh = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
+
+// ---------- Laden ----------
+async function load() {
+  const base = dataBase();
+  const bust = '?t=' + Math.floor(Date.now() / 60000);
+  const idx = await fetch(base + 'index.json' + bust).then(r => { if (!r.ok) throw new Error('index'); return r.json(); });
+  const months = idx.months.slice(-6);
+  const texts = await Promise.all(months.map(m => fetch(base + m + '.csv' + bust).then(r => r.ok ? r.text() : '')));
+  const rows = [];
+  for (const t of texts) {
+    for (const line of t.split('\n').slice(1)) {
+      const [ts, v, cnt, mx] = line.split(',');
+      if (!ts || v === undefined || v.trim() === '') continue;
+      const d = new Date(ts);
+      const pct = parseFloat(v);
+      if (isNaN(d) || isNaN(pct)) continue;
+      rows.push({ d, v: pct, count: cnt ? +cnt : null, max: mx ? +mx : null, ...local(d) });
+    }
+  }
+  rows.sort((a, b) => a.d - b.d);
+  return rows;
+}
+
+// ---------- Statistik ----------
+function bucketStats(rows, keyFn) {
+  const map = new Map();
+  for (const r of rows) {
+    const k = keyFn(r);
+    if (k == null) continue;
+    let b = map.get(k);
+    if (!b) map.set(k, b = { sum: 0, n: 0, max: -1, vals: [] });
+    b.sum += r.v; b.n++; b.max = Math.max(b.max, r.v); b.vals.push(r.v);
+  }
+  for (const b of map.values()) {
+    b.avg = b.sum / b.n;
+    b.vals.sort((a, c) => a - c);
+    b.p75 = b.vals[Math.floor(b.vals.length * 0.75)] ?? b.avg;
+  }
+  return map;
+}
+// Messungen auf 15-Minuten-Raster je Tag mitteln, damit ungleichmaessige Abrufe nicht verzerren
+function dedupe15(rows) {
+  const m = bucketStats(rows, r => `${r.day}|${r.wd}|${r.h * 4 + Math.floor(r.m / 15)}`);
+  return [...m.entries()].map(([k, b]) => {
+    const [day, wd, slot] = k.split('|');
+    return { day, wd: +wd, slot: +slot, h: Math.floor(+slot / 4), v: b.avg };
+  });
+}
+
+// ---------- Farben ----------
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function seqColor(v, max) {
+  const steps = ['--seq-1', '--seq-2', '--seq-3', '--seq-4', '--seq-5', '--seq-6', '--seq-7'];
+  const i = Math.min(steps.length - 1, Math.floor((v / Math.max(max, 1)) * steps.length));
+  return `var(${steps[i]})`;
+}
+function level(v) {
+  if (v < 35) return { t: 'Wenig los', c: 'var(--good)' };
+  if (v < 65) return { t: 'Mittel', c: 'var(--warning)' };
+  return { t: 'Voll', c: 'var(--critical)' };
+}
+
+// ---------- Tooltip ----------
+const tip = document.getElementById('tooltip');
+function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
+function moveTip(e) {
+  const x = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + 'px'; tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
+}
+function hideTip() { tip.style.opacity = 0; }
+
+// ---------- Rendering ----------
+let ALL = [], charts = [], days = 42;
+
+function render() {
+  charts.forEach(c => c.destroy()); charts = [];
+  const el = document.getElementById('content');
+  if (!ALL.length) {
+    el.innerHTML = `<div class="card span-12 msg">Noch keine Messwerte vorhanden.<br>Sobald der Sammler läuft, erscheinen hier nach wenigen Minuten die ersten Daten.</div>`;
+    return;
+  }
+  const cutoff = days ? Date.now() - days * 864e5 : 0;
+  const rows = ALL.filter(r => +r.d >= cutoff);
+  const q = dedupe15(rows);
+  const last = ALL[ALL.length - 1];
+  const now = local(new Date());
+
+  // Typisch je Wochentag+Stunde und je Wochentag+15min
+  const byWdH = bucketStats(q, r => `${r.wd}|${r.h}`);
+  const byWdSlot = bucketStats(q, r => `${r.wd}|${r.slot}`);
+  const typicalNow = byWdSlot.get(`${now.wd}|${now.h * 4 + Math.floor(now.m / 15)}`);
+  const ageMin = Math.round((Date.now() - last.d) / 60000);
+  const lv = level(last.v);
+
+  // Stunden, in denen ueberhaupt gemessen wurde (Oeffnungszeiten)
+  const hoursWithData = [...new Set(q.filter(r => r.v > 0).map(r => r.h))].sort((a, b) => a - b);
+  const hMin = hoursWithData.length ? hoursWithData[0] : 0;
+  const hMax = hoursWithData.length ? hoursWithData[hoursWithData.length - 1] : 23;
+
+  const ranked = [...byWdH.entries()]
+    .filter(([k, b]) => b.n >= MIN_SAMPLES && +k.split('|')[1] >= hMin && +k.split('|')[1] <= hMax)
+    .map(([k, b]) => ({ wd: +k.split('|')[0], h: +k.split('|')[1], ...b }));
+  const peaks = [...ranked].sort((a, b) => b.avg - a.avg).slice(0, 6);
+  const quiet = [...ranked].sort((a, b) => a.avg - b.avg).slice(0, 6);
+
+  const byWd = bucketStats(q.filter(r => r.h >= hMin && r.h <= hMax), r => r.wd);
+  const overall = q.length ? q.reduce((s, r) => s + r.v, 0) / q.length : 0;
+  const maxRow = rows.reduce((a, b) => (b.v > a.v ? b : a), rows[0] || last);
+  const nDays = new Set(rows.map(r => r.day)).size;
+
+  // Naechste ruhige Phase heute
+  let nextQuiet = null;
+  for (let s = now.h * 4 + Math.floor(now.m / 15) + 1; s < (hMax + 1) * 4; s++) {
+    const b = byWdSlot.get(`${now.wd}|${s}`);
+    if (b && b.n >= 2 && b.avg < Math.min(35, overall)) { nextQuiet = { s, avg: b.avg }; break; }
+  }
+
+  const cmp = typicalNow ? last.v - typicalNow.avg : null;
+
+  el.innerHTML = `
+  <section class="card span-3">
+    <div class="label">Jetzt</div>
+    <div class="big">${Math.round(last.v)} %</div>
+    <div class="pill"><span class="dot" style="background:${lv.c}"></span>${lv.t}</div>
+    <div class="small" style="margin-top:6px">${last.count != null ? `${last.count} von ${last.max} Personen · ` : ''}vor ${ageMin < 1 ? '< 1' : ageMin} Min.</div>
+  </section>
+  <section class="card span-3">
+    <div class="label">Normal um diese Zeit</div>
+    <div class="big">${typicalNow ? Math.round(typicalNow.avg) + ' %' : '–'}</div>
+    <div class="small">${cmp == null ? 'noch zu wenig Daten' : (Math.abs(cmp) < 5 ? 'gerade ganz normal' : cmp > 0 ? `heute ${Math.round(cmp)} Punkte voller` : `heute ${Math.round(-cmp)} Punkte leerer`)}</div>
+  </section>
+  <section class="card span-3">
+    <div class="label">Nächste ruhige Phase heute</div>
+    <div class="big">${nextQuiet ? hh(nextQuiet.s / 4) : '–'}</div>
+    <div class="small">${nextQuiet ? `typisch ${Math.round(nextQuiet.avg)} %` : 'heute keine mehr erwartet'}</div>
+  </section>
+  <section class="card span-3">
+    <div class="label">Datenbasis</div>
+    <div class="big">${nDays} ${nDays === 1 ? 'Tag' : 'Tage'}</div>
+    <div class="small">${rows.length.toLocaleString('de-DE')} Messungen · Ø ${Math.round(overall)} %</div>
+  </section>
+
+  <section class="card span-12">
+    <h2>Wann ist es voll? Ø Auslastung nach Wochentag und Uhrzeit</h2>
+    <p class="sub">Dunkler = voller. Fahre über ein Feld für Details.</p>
+    <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+    <div class="scale">wenig <i style="background:var(--seq-1)"></i><i style="background:var(--seq-3)"></i><i style="background:var(--seq-5)"></i><i style="background:var(--seq-7)"></i> viel</div>
+  </section>
+
+  <section class="card span-8">
+    <h2>Tagesverlauf</h2>
+    <p class="sub">Durchschnitt in 15-Minuten-Schritten, verglichen mit allen Tagen</p>
+    <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
+      <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span></div>
+      <select id="daySel" aria-label="Wochentag">${DAYS_LONG.map((d, i) => `<option value="${i}" ${i === now.wd ? 'selected' : ''}>${d}</option>`).join('')}</select>
+    </div>
+    <div class="chart-box"><canvas id="profile"></canvas></div>
+  </section>
+
+  <section class="card span-4">
+    <h2>Wochentage</h2>
+    <p class="sub">Ø Auslastung während der Öffnungszeit</p>
+    <div class="chart-box"><canvas id="weekdays"></canvas></div>
+  </section>
+
+  <section class="card span-6">
+    <h2>Echte Stoßzeiten</h2>
+    <p class="sub">Die vollsten Stunden der Woche</p>
+    <ol class="rank">${peaks.map(p => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span><span class="num">${Math.round(p.avg)} %</span><span class="bar"><i style="width:${p.avg}%;background:var(--s2)"></i></span></li>`).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
+  </section>
+  <section class="card span-6">
+    <h2>Beste Trainingszeiten</h2>
+    <p class="sub">Die leersten Stunden während der Öffnungszeit</p>
+    <ol class="rank">${quiet.map(p => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span><span class="num">${Math.round(p.avg)} %</span><span class="bar"><i style="width:${p.avg}%;background:var(--s1)"></i></span></li>`).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
+  </section>
+
+  <section class="card span-12">
+    <h2>Verlauf</h2>
+    <p class="sub">Alle Messwerte im gewählten Zeitraum · Rekord: ${Math.round(maxRow.v)} % am ${fmtTime(maxRow.d)}</p>
+    <div class="chart-box"><canvas id="timeline"></canvas></div>
+    <details style="margin-top:10px"><summary>Tabelle: Ø je Wochentag und Stunde</summary><div style="overflow-x:auto" id="tbl"></div></details>
+  </section>`;
+
+  // Heatmap
+  const heat = document.getElementById('heat');
+  const hours = []; for (let h = hMin; h <= hMax; h++) hours.push(h);
+  heat.style.setProperty('--cols', hours.length);
+  const maxAvg = Math.max(1, ...[...byWdH.values()].map(b => b.avg));
+  let html = '<div></div>' + hours.map(h => `<div>${h}</div>`).join('');
+  for (let wd = 0; wd < 7; wd++) {
+    html += `<div class="row">${DAYS[wd]}</div>`;
+    for (const h of hours) {
+      const b = byWdH.get(`${wd}|${h}`);
+      html += `<div class="cell" ${b ? `style="background:${seqColor(b.avg, maxAvg)}" data-t="${DAYS_LONG[wd]} ${hh(h)}–${hh(h + 1)}<br><b>Ø ${Math.round(b.avg)} %</b> · max ${Math.round(b.max)} % · ${b.n} Werte"` : 'data-t="keine Daten"'}></div>`;
+    }
+  }
+  heat.innerHTML = html;
+  heat.querySelectorAll('.cell').forEach(c => {
+    c.addEventListener('mouseenter', e => showTip(e, c.dataset.t));
+    c.addEventListener('mousemove', moveTip);
+    c.addEventListener('mouseleave', hideTip);
+  });
+
+  // Tabelle
+  document.getElementById('tbl').innerHTML = `<table><tr><th>Uhrzeit</th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${hours.map(h => `<tr><td>${hh(h)}</td>${DAYS.map((_, wd) => { const b = byWdH.get(`${wd}|${h}`); return `<td>${b ? Math.round(b.avg) : '–'}</td>`; }).join('')}</tr>`).join('')}</table>`;
+
+  // Chart-Defaults
+  Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = css('--muted');
+  const grid = { color: css('--grid'), drawTicks: false };
+  const tooltip = { backgroundColor: css('--text'), titleColor: css('--surface'), bodyColor: css('--surface'), padding: 8, cornerRadius: 6, displayColors: true, boxPadding: 4 };
+  const yPct = { min: 0, suggestedMax: 100, grid, border: { display: false }, ticks: { callback: v => v + ' %', stepSize: 25, padding: 6 } };
+
+  // Tagesprofil
+  const slots = []; for (let s = hMin * 4; s < (hMax + 1) * 4; s++) slots.push(s);
+  const allSlot = bucketStats(q, r => r.slot);
+  const profileData = wd => slots.map(s => { const b = byWdSlot.get(`${wd}|${s}`); return b ? +b.avg.toFixed(1) : null; });
+  const profile = new Chart(document.getElementById('profile'), {
+    type: 'line',
+    data: {
+      labels: slots.map(s => hh(s / 4)),
+      datasets: [
+        { label: DAYS_LONG[now.wd], data: profileData(now.wd), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true },
+        { label: 'Alle Tage', data: slots.map(s => { const b = allSlot.get(s); return b ? +b.avg.toFixed(1) : null; }), borderColor: css('--s2'), backgroundColor: css('--s2'), borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true }
+      ]
+    },
+    options: {
+      maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '–' : Math.round(c.parsed.y) + ' %'}` } } },
+      scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => slots[i] % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: yPct }
+    }
+  });
+  charts.push(profile);
+  const dayName = document.getElementById('dayName');
+  dayName.textContent = DAYS_LONG[now.wd];
+  document.getElementById('daySel').addEventListener('change', e => {
+    const wd = +e.target.value;
+    profile.data.datasets[0].data = profileData(wd);
+    profile.data.datasets[0].label = DAYS_LONG[wd];
+    dayName.textContent = DAYS_LONG[wd];
+    profile.update();
+  });
+
+  // Wochentage
+  charts.push(new Chart(document.getElementById('weekdays'), {
+    type: 'bar',
+    data: { labels: DAYS, datasets: [{ data: DAYS.map((_, i) => byWd.get(i) ? +byWd.get(i).avg.toFixed(1) : 0), backgroundColor: css('--s1'), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 28 }] },
+    options: {
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { title: c => DAYS_LONG[c[0].dataIndex], label: c => `Ø ${Math.round(c.parsed.y)} %` } } },
+      scales: { x: { grid: { display: false } }, y: { ...yPct, suggestedMax: Math.min(100, Math.ceil(Math.max(...[...byWd.values()].map(b => b.avg), 10) / 10) * 10 + 10) } }
+    }
+  }));
+
+  // Zeitverlauf
+  const step = Math.max(1, Math.floor(rows.length / 3000));
+  const tl = rows.filter((_, i) => i % step === 0);
+  charts.push(new Chart(document.getElementById('timeline'), {
+    type: 'line',
+    data: { labels: tl.map(r => fmtTime(r.d)), datasets: [{ label: 'Auslastung', data: tl.map(r => r.v), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 }] },
+    options: {
+      maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { label: c => `${Math.round(c.parsed.y)} %` } } },
+      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, callback: (v, i) => tl[i] ? tl[i].d.toLocaleDateString('de-DE', { timeZone: TZ, day: '2-digit', month: '2-digit' }) : '' } }, y: yPct }
+    }
+  }));
+
+  document.getElementById('updated').textContent = `Letzte Messung: ${fmtTime(last.d)} · aktualisiert sich alle 5 Min.`;
+}
+
+document.getElementById('range').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('#range button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  days = +b.dataset.days; render();
+});
+
+async function refresh() {
+  try { ALL = await load(); render(); }
+  catch (err) {
+    console.error(err);
+    document.getElementById('content').innerHTML = `<div class="card span-12 msg">Noch keine Daten gefunden.<br><span class="small">Gesucht unter <code>${dataBase()}</code>. Läuft der Sammler schon? (GitHub → Actions)</span></div>`;
+    document.getElementById('updated').textContent = '';
+  }
+}
+refresh();
+setInterval(refresh, 5 * 60 * 1000);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>
+</body>
+</html>
