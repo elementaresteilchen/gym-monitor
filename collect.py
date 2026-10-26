@@ -25,6 +25,9 @@ Konfiguration ausschliesslich ueber Umgebungsvariablen (in GitHub als "Secrets")
   STATIC_TOKEN      (optional) festes Token fuer {token}. Ist zusaetzlich LOGIN_* gesetzt,
                                wird nur bei 401/403 neu eingeloggt.
 
+  OPEN_HOURS        (optional) nur in diesem Zeitraum messen, Standard 06:00-23:00
+                               (Berliner Zeit, aenderbar ueber TIMEZONE). "immer" = rund um die Uhr.
+
 Ausgabe: data/YYYY-MM.csv  (Spalten: timestamp_utc,percent,count,max)
          data/index.json   (Liste der Monatsdateien fuer das Dashboard)
 """
@@ -197,8 +200,22 @@ def append(now, percent, count=None, mx=None):
         json.dump({"months": months, "updated": now.strftime("%Y-%m-%dT%H:%M:%SZ")}, f)
 
 
+def is_open(now_utc):
+    """Oeffnungszeiten, z.B. OPEN_HOURS=06:00-23:00 (Standard), Zeitzone TIMEZONE (Europe/Berlin)."""
+    hours = env("OPEN_HOURS", "06:00-23:00")
+    if hours.lower() in ("", "always", "immer"):
+        return True
+    from zoneinfo import ZoneInfo
+    local = now_utc.astimezone(ZoneInfo(env("TIMEZONE", "Europe/Berlin")))
+    start, end = [dt.time.fromisoformat(x.strip()) for x in hours.split("-")]
+    return start <= local.time() < end
+
+
 def main():
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0)
+    if not is_open(now):
+        print(f"{now.isoformat()}  Studio geschlossen – kein Abruf.")
+        return
     try:
         percent, count, mx = fetch()
         extra = f"  ({count} von {mx} Personen)" if count is not None else ""

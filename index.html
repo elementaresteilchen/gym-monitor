@@ -5,22 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Studio Auslastung</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%232a78d6'/><rect x='6' y='18' width='4' height='8' rx='1' fill='white'/><rect x='14' y='12' width='4' height='14' rx='1' fill='white'/><rect x='22' y='6' width='4' height='20' rx='1' fill='white'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%232a78d6'/><rect x='6' y='18' width='4' height='8' rx='1' fill='white'/><rect x='14' y='12' width='4' height='14' rx='1' fill='white'/><rect x='22' y='6' width='4' height='20' rx='1' fill='white'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
   color-scheme: light;
-  --bg: #f4f4f2;
-  --surface: #fcfcfb;
-  --border: #e4e3df;
-  --text: #0b0b0b;
-  --text-2: #52514e;
-  --muted: #8a8984;
-  --grid: #ecebe7;
-  --s1: #2a78d6;
-  --s2: #eb6834;
-  --empty: #efeeea;
+  --bg: #f4f4f2; --surface: #fcfcfb; --border: #e4e3df;
+  --text: #0b0b0b; --text-2: #52514e; --muted: #8a8984; --grid: #ecebe7;
+  --s1: #2a78d6; --s2: #eb6834; --empty: #efeeea;
   --seq-1: #cde2fb; --seq-2: #9ec5f4; --seq-3: #6da7ec; --seq-4: #3987e5;
   --seq-5: #256abf; --seq-6: #184f95; --seq-7: #0d366b;
   --good: #0ca30c; --warning: #fab219; --critical: #d03b3b;
@@ -46,7 +40,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text);
   font: 15px/1.5 Inter, system-ui, -apple-system, sans-serif; }
-main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 32px; }
 header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; margin-bottom: 20px; }
 h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
 h2 { font-size: 15px; margin: 0 0 2px; }
@@ -58,31 +52,31 @@ h2 { font-size: 15px; margin: 0 0 2px; }
 .seg button[aria-pressed="true"] { background: var(--text); color: var(--surface); }
 .grid { display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; min-width: 0; }
-.span-3 { grid-column: span 3; } .span-4 { grid-column: span 4; } .span-6 { grid-column: span 6; }
+.span-4 { grid-column: span 4; } .span-6 { grid-column: span 6; }
 .span-8 { grid-column: span 8; } .span-12 { grid-column: span 12; }
-@media (max-width: 860px) { .span-3 { grid-column: span 6; } .span-4, .span-6, .span-8 { grid-column: span 12; } }
-@media (max-width: 480px) { .span-3 { grid-column: span 12; } }
+@media (max-width: 860px) { .span-4, .span-6, .span-8 { grid-column: span 12; } }
 .label { color: var(--text-2); font-size: 13px; }
 .big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; margin: 4px 0; font-variant-numeric: tabular-nums; }
+.big small { font-size: 18px; font-weight: 500; color: var(--text-2); letter-spacing: 0; }
 .small { font-size: 13px; color: var(--text-2); }
-.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; }
-.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.pill.inline { font-weight: 500; font-size: 12px; color: var(--text-2); }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
 .chart-box { position: relative; height: 280px; }
 .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; flex-wrap: wrap; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .swatch { width: 14px; height: 3px; border-radius: 2px; }
-/* Heatmap */
+.swatch.dash { background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px); height: 2px; }
 .heat-wrap { overflow-x: auto; }
-.heat { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(22px, 1fr)); gap: 2px; min-width: 560px; }
+.heat { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(22px, 1fr)); gap: 2px; min-width: 520px; }
 .heat div { font-size: 11px; color: var(--muted); text-align: center; }
 .heat .row { text-align: left; color: var(--text-2); font-size: 12px; align-self: center; }
-.heat .cell { height: 28px; border-radius: 4px; background: var(--empty); position: relative; cursor: default; }
-.heat .cell:hover { outline: 2px solid var(--text); outline-offset: 1px; z-index: 1; }
+.heat .cell { height: 28px; border-radius: 4px; background: var(--empty); cursor: default; }
+.heat .cell:hover { outline: 2px solid var(--text); outline-offset: 1px; }
 .scale { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 12px; color: var(--muted); }
 .scale i { width: 22px; height: 10px; border-radius: 3px; display: inline-block; }
-/* Listen */
 ol.rank { list-style: none; margin: 8px 0 0; padding: 0; }
-ol.rank li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+ol.rank li { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
 ol.rank li:first-child { border-top: 0; }
 ol.rank .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--empty); overflow: hidden; }
 ol.rank .bar i { display: block; height: 100%; border-radius: 2px; }
@@ -95,15 +89,14 @@ details summary { cursor: pointer; color: var(--text-2); font-size: 13px; }
 table { border-collapse: collapse; font-size: 12px; width: 100%; margin-top: 8px; font-variant-numeric: tabular-nums; }
 th, td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: right; }
 th:first-child, td:first-child { text-align: left; }
+footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 40px; font-size: 12px; color: var(--muted); line-height: 1.7; }
+footer b { color: var(--text-2); font-weight: 500; }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <div>
-      <h1 id="title">Studio Auslastung</h1>
-      <div class="small" id="updated">Lade Daten …</div>
-    </div>
+    <h1>Studio Auslastung</h1>
     <div class="controls">
       <div class="seg" id="range" role="group" aria-label="Zeitraum">
         <button data-days="14">2 Wochen</button>
@@ -112,20 +105,25 @@ th:first-child, td:first-child { text-align: left; }
       </div>
     </div>
   </header>
-
   <div id="content" class="grid">
-    <div class="card span-12 msg" id="loading">Lade Messwerte …</div>
+    <div class="card span-12 msg">Lade Messwerte …</div>
   </div>
 </main>
+<footer id="footer"></footer>
 <div id="tooltip"></div>
 
 <script>
+// ---------- Einstellungen ----------
 const TZ = 'Europe/Berlin';
+const OPEN = 6, CLOSE = 23;      // Oeffnungszeiten (volle Stunden): 06:00 bis 23:00
+const MIN_SAMPLES = 3;           // Mindestanzahl Werte pro Stunde fuer Ranglisten
+const MIN_FOR_LEVELS = 30;       // Mindestanzahl Werte fuer wenig/normal/viel
+const FALLBACK_MAX = 40;         // nur fuer alte Zeilen ohne Personenzahl
+
 const DAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 const DAYS_LONG = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
-const MIN_SAMPLES = 3;          // Mindestanzahl Messungen pro Zeitfenster fuer Rankings
 
-// ---------- Datenquelle bestimmen ----------
+// ---------- Datenquelle ----------
 function dataBase() {
   const q = new URLSearchParams(location.search);
   if (q.get('data')) return q.get('data').replace(/\/?$/, '/');
@@ -138,7 +136,7 @@ function dataBase() {
   return './data/';
 }
 
-// ---------- Zeitzonen-Helfer ----------
+// ---------- Zeit ----------
 const fmtParts = new Intl.DateTimeFormat('de-DE', { timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit' });
 const WD = { 'Mo.': 0, 'Di.': 1, 'Mi.': 2, 'Do.': 3, 'Fr.': 4, 'Sa.': 5, 'So.': 6, Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6 };
 function local(d) {
@@ -147,23 +145,26 @@ function local(d) {
 }
 const fmtTime = d => d.toLocaleString('de-DE', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const hh = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
+const isOpenHour = h => h >= OPEN && h < CLOSE;
+const fmt1 = v => v.toLocaleString('de-DE', { maximumFractionDigits: 1 });
 
 // ---------- Laden ----------
 async function load() {
   const base = dataBase();
   const bust = '?t=' + Math.floor(Date.now() / 60000);
   const idx = await fetch(base + 'index.json' + bust).then(r => { if (!r.ok) throw new Error('index'); return r.json(); });
-  const months = idx.months.slice(-6);
-  const texts = await Promise.all(months.map(m => fetch(base + m + '.csv' + bust).then(r => r.ok ? r.text() : '')));
+  const texts = await Promise.all(idx.months.slice(-6).map(m => fetch(base + m + '.csv' + bust).then(r => r.ok ? r.text() : '')));
   const rows = [];
   for (const t of texts) {
     for (const line of t.split('\n').slice(1)) {
-      const [ts, v, cnt, mx] = line.split(',');
-      if (!ts || v === undefined || v.trim() === '') continue;
+      const [ts, pct, cnt] = line.split(',');
+      if (!ts) continue;
       const d = new Date(ts);
-      const pct = parseFloat(v);
-      if (isNaN(d) || isNaN(pct)) continue;
-      rows.push({ d, v: pct, count: cnt ? +cnt : null, max: mx ? +mx : null, ...local(d) });
+      let v = cnt !== undefined && cnt.trim() !== '' ? +cnt : (pct ? Math.round(+pct * FALLBACK_MAX / 100) : NaN);
+      if (isNaN(d) || isNaN(v)) continue;
+      const l = local(d);
+      if (!isOpenHour(l.h)) continue;           // ausserhalb der Oeffnungszeiten ignorieren
+      rows.push({ d, v, ...l });
     }
   }
   rows.sort((a, b) => a.d - b.d);
@@ -177,46 +178,89 @@ function bucketStats(rows, keyFn) {
     const k = keyFn(r);
     if (k == null) continue;
     let b = map.get(k);
-    if (!b) map.set(k, b = { sum: 0, n: 0, max: -1, vals: [] });
-    b.sum += r.v; b.n++; b.max = Math.max(b.max, r.v); b.vals.push(r.v);
+    if (!b) map.set(k, b = { sum: 0, n: 0, max: -Infinity });
+    b.sum += r.v; b.n++; b.max = Math.max(b.max, r.v);
   }
-  for (const b of map.values()) {
-    b.avg = b.sum / b.n;
-    b.vals.sort((a, c) => a - c);
-    b.p75 = b.vals[Math.floor(b.vals.length * 0.75)] ?? b.avg;
-  }
+  for (const b of map.values()) b.avg = b.sum / b.n;
   return map;
 }
-// Messungen auf 15-Minuten-Raster je Tag mitteln, damit ungleichmaessige Abrufe nicht verzerren
+// Unregelmaessige Messungen: pro Tag auf 15-Minuten-Fenster mitteln
 function dedupe15(rows) {
   const m = bucketStats(rows, r => `${r.day}|${r.wd}|${r.h * 4 + Math.floor(r.m / 15)}`);
   return [...m.entries()].map(([k, b]) => {
     const [day, wd, slot] = k.split('|');
-    return { day, wd: +wd, slot: +slot, h: Math.floor(+slot / 4), v: b.avg };
+    return { day, wd: +wd, slot: +slot, s30: Math.floor(+slot / 2), h: Math.floor(+slot / 4), v: b.avg };
   });
 }
+function quantile(sorted, p) {
+  if (!sorted.length) return NaN;
+  const i = (sorted.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i);
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (i - lo);
+}
 
-// ---------- Farben ----------
+// Einstufung: Drittel-Grenzen aus allen bisherigen Messungen waehrend der Oeffnungszeit.
+// Das untere Drittel aller gemessenen Werte = "wenig los", das obere Drittel = "viel los".
+let LV = null;
+function computeLevels(q) {
+  const vals = q.map(r => r.v).sort((a, b) => a - b);
+  if (vals.length < MIN_FOR_LEVELS) return null;
+  return { t1: quantile(vals, 1 / 3), t2: quantile(vals, 2 / 3), n: vals.length };
+}
+function level(v) {
+  if (!LV || v == null) return null;
+  if (v <= LV.t1) return { k: 0, t: 'Wenig los', c: 'var(--good)' };
+  if (v > LV.t2) return { k: 2, t: 'Viel los', c: 'var(--critical)' };
+  return { k: 1, t: 'Normal', c: 'var(--warning)' };
+}
+const pill = (v, inline) => { const l = level(v); return l ? `<span class="pill${inline ? ' inline' : ''}"><span class="dot" style="background:${l.c}"></span>${l.t}</span>` : ''; };
+
+// Typischer Wert fuer Wochentag + halbe Stunde, mit Rueckfall auf Werktag/Wochenende bzw. alle Tage
+function makeTypical(q) {
+  const byDay = bucketStats(q, r => `${r.wd}|${r.s30}`);
+  const byGroup = bucketStats(q, r => `${r.wd < 5 ? 'w' : 'e'}|${r.s30}`);
+  const byAll = bucketStats(q, r => r.s30);
+  return (wd, s30) => {
+    const a = byDay.get(`${wd}|${s30}`);
+    if (a && a.n >= 2) return a;
+    const g = byGroup.get(`${wd < 5 ? 'w' : 'e'}|${s30}`);
+    if (g && g.n >= 2) return g;
+    const all = byAll.get(s30);
+    return all && all.n >= 2 ? all : (a || g || all || null);
+  };
+}
+
+// ---------- Farben / Tooltip ----------
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 function seqColor(v, max) {
   const steps = ['--seq-1', '--seq-2', '--seq-3', '--seq-4', '--seq-5', '--seq-6', '--seq-7'];
-  const i = Math.min(steps.length - 1, Math.floor((v / Math.max(max, 1)) * steps.length));
-  return `var(${steps[i]})`;
+  return `var(${steps[Math.min(steps.length - 1, Math.floor((v / Math.max(max, 1)) * steps.length))]})`;
 }
-function level(v) {
-  if (v < 35) return { t: 'Wenig los', c: 'var(--good)' };
-  if (v < 65) return { t: 'Mittel', c: 'var(--warning)' };
-  return { t: 'Voll', c: 'var(--critical)' };
-}
-
-// ---------- Tooltip ----------
 const tip = document.getElementById('tooltip');
 function showTip(e, html) { tip.innerHTML = html; tip.style.opacity = 1; moveTip(e); }
 function moveTip(e) {
-  const x = Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8);
-  tip.style.left = x + 'px'; tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
+  tip.style.left = Math.max(8, Math.min(e.clientX + 12, innerWidth - tip.offsetWidth - 8)) + 'px';
+  tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
 }
 function hideTip() { tip.style.opacity = 0; }
+
+// Gestrichelte Grenzlinien "wenig"/"viel" in Diagrammen
+const levelLines = {
+  id: 'levelLines',
+  afterDatasetsDraw(chart) {
+    if (!LV) return;
+    const { ctx, chartArea: a, scales: { y } } = chart;
+    ctx.save();
+    ctx.setLineDash([4, 4]); ctx.lineWidth = 1; ctx.strokeStyle = css('--muted');
+    ctx.fillStyle = css('--muted'); ctx.font = '11px Inter, system-ui, sans-serif'; ctx.textAlign = 'right';
+    for (const [val, txt] of [[LV.t1, 'wenig ≤ ' + fmt1(LV.t1)], [LV.t2, 'viel > ' + fmt1(LV.t2)]]) {
+      const py = y.getPixelForValue(val);
+      if (py < a.top || py > a.bottom) continue;
+      ctx.beginPath(); ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke();
+      ctx.fillText(txt, a.right - 2, py - 4);
+    }
+    ctx.restore();
+  }
+};
 
 // ---------- Rendering ----------
 let ALL = [], charts = [], days = 42;
@@ -225,82 +269,101 @@ function render() {
   charts.forEach(c => c.destroy()); charts = [];
   const el = document.getElementById('content');
   if (!ALL.length) {
-    el.innerHTML = `<div class="card span-12 msg">Noch keine Messwerte vorhanden.<br>Sobald der Sammler läuft, erscheinen hier nach wenigen Minuten die ersten Daten.</div>`;
+    el.innerHTML = `<div class="card span-12 msg">Noch keine Messwerte vorhanden.</div>`;
     return;
   }
+  // Grenzen immer aus ALLEN Daten (stabil, unabhaengig vom gewaehlten Zeitraum)
+  LV = computeLevels(dedupe15(ALL));
+
   const cutoff = days ? Date.now() - days * 864e5 : 0;
   const rows = ALL.filter(r => +r.d >= cutoff);
   const q = dedupe15(rows);
+  const typical = makeTypical(q);
   const last = ALL[ALL.length - 1];
   const now = local(new Date());
-
-  // Typisch je Wochentag+Stunde und je Wochentag+15min
-  const byWdH = bucketStats(q, r => `${r.wd}|${r.h}`);
-  const byWdSlot = bucketStats(q, r => `${r.wd}|${r.slot}`);
-  const typicalNow = byWdSlot.get(`${now.wd}|${now.h * 4 + Math.floor(now.m / 15)}`);
+  const nowOpen = isOpenHour(now.h);
+  const nowS30 = now.h * 2 + Math.floor(now.m / 30);
   const ageMin = Math.round((Date.now() - last.d) / 60000);
-  const lv = level(last.v);
+  const fresh = nowOpen && ageMin <= 90;
 
-  // Stunden, in denen ueberhaupt gemessen wurde (Oeffnungszeiten)
-  const hoursWithData = [...new Set(q.filter(r => r.v > 0).map(r => r.h))].sort((a, b) => a - b);
-  const hMin = hoursWithData.length ? hoursWithData[0] : 0;
-  const hMax = hoursWithData.length ? hoursWithData[hoursWithData.length - 1] : 23;
-
-  const ranked = [...byWdH.entries()]
-    .filter(([k, b]) => b.n >= MIN_SAMPLES && +k.split('|')[1] >= hMin && +k.split('|')[1] <= hMax)
-    .map(([k, b]) => ({ wd: +k.split('|')[0], h: +k.split('|')[1], ...b }));
-  const peaks = [...ranked].sort((a, b) => b.avg - a.avg).slice(0, 6);
-  const quiet = [...ranked].sort((a, b) => a.avg - b.avg).slice(0, 6);
-
-  const byWd = bucketStats(q.filter(r => r.h >= hMin && r.h <= hMax), r => r.wd);
-  const overall = q.length ? q.reduce((s, r) => s + r.v, 0) / q.length : 0;
-  const maxRow = rows.reduce((a, b) => (b.v > a.v ? b : a), rows[0] || last);
-  const nDays = new Set(rows.map(r => r.day)).size;
-
-  // Naechste ruhige Phase heute
-  let nextQuiet = null;
-  for (let s = now.h * 4 + Math.floor(now.m / 15) + 1; s < (hMax + 1) * 4; s++) {
-    const b = byWdSlot.get(`${now.wd}|${s}`);
-    if (b && b.n >= 2 && b.avg < Math.min(35, overall)) { nextQuiet = { s, avg: b.avg }; break; }
+  // --- Karte "Jetzt"
+  let nowCard;
+  if (!nowOpen) {
+    nowCard = `<div class="big">Geschlossen</div><div class="small">öffnet um ${hh(OPEN)} Uhr</div>`;
+  } else if (!fresh) {
+    nowCard = `<div class="big">–</div><div class="small">keine aktuelle Messung (letzte: ${fmtTime(last.d)})</div>`;
+  } else {
+    nowCard = `<div class="big">${last.v} <small>${last.v === 1 ? 'Person' : 'Personen'}</small></div>
+      ${pill(last.v) || '<span class="small">Einstufung ab ' + MIN_FOR_LEVELS + ' Messungen</span>'}
+      <div class="small" style="margin-top:6px">eingecheckt · gemessen vor ${ageMin < 1 ? '< 1' : ageMin} Min.</div>`;
   }
 
-  const cmp = typicalNow ? last.v - typicalNow.avg : null;
+  // --- Karte "Normal um diese Zeit"
+  const tNow = nowOpen ? typical(now.wd, nowS30) : null;
+  let typCard;
+  if (!tNow) typCard = `<div class="big">–</div><div class="small">${nowOpen ? 'noch zu wenig Daten' : 'außerhalb der Öffnungszeit'}</div>`;
+  else {
+    const diff = fresh ? last.v - tNow.avg : null;
+    const cmp = diff == null ? '' : Math.abs(diff) < 1.5 ? 'gerade ganz normal' : diff > 0 ? `heute ${fmt1(diff)} mehr als üblich` : `heute ${fmt1(-diff)} weniger als üblich`;
+    typCard = `<div class="big">${fmt1(tNow.avg)} <small>Ø Personen</small></div>${pill(tNow.avg)}
+      <div class="small" style="margin-top:6px">${DAYS_LONG[now.wd]}s um ${hh(nowS30 / 2)}${cmp ? ' · ' + cmp : ''}</div>`;
+  }
+
+  // --- Karte "Naechste ruhige Phase"
+  function findQuiet(wd, fromS30) {
+    for (let s = fromS30; s < CLOSE * 2; s++) {
+      const t = typical(wd, s);
+      if (t && LV && t.avg <= LV.t1) return { s, avg: t.avg };
+    }
+    return null;
+  }
+  let quietCard;
+  if (!LV) quietCard = `<div class="big">–</div><div class="small">noch zu wenig Daten</div>`;
+  else {
+    let res = null, when = '';
+    if (nowOpen && fresh && last.v <= LV.t1) { res = { now: true }; }
+    else {
+      const start = nowOpen ? nowS30 + 1 : (now.h < OPEN ? OPEN * 2 : null);
+      if (start != null) { res = findQuiet(now.wd, start); when = 'heute'; }
+      if (!res) { res = findQuiet((now.wd + 1) % 7, OPEN * 2); when = 'morgen'; }
+    }
+    if (!res) quietCard = `<div class="big">–</div><div class="small">keine ruhige Phase erkennbar</div>`;
+    else if (res.now) quietCard = `<div class="big">Jetzt</div><div class="small">gerade ist wenig los</div>`;
+    else quietCard = `<div class="big">${when === 'morgen' ? '<small>morgen</small> ' : ''}${hh(res.s / 2)}</div>
+      <div class="small">${when === 'morgen' ? DAYS_LONG[(now.wd + 1) % 7] + ' · ' : ''}typisch Ø ${fmt1(res.avg)} Personen</div>`;
+  }
+
+  // --- Ranglisten (nur Oeffnungszeit, ganze Stunden)
+  const byWdH = bucketStats(q, r => `${r.wd}|${r.h}`);
+  const ranked = [...byWdH.entries()].filter(([, b]) => b.n >= MIN_SAMPLES)
+    .map(([k, b]) => ({ wd: +k.split('|')[0], h: +k.split('|')[1], ...b }));
+  const maxAvg = Math.max(1, ...ranked.map(r => r.avg));
+  const peaks = [...ranked].sort((a, b) => b.avg - a.avg).slice(0, 6);
+  const quiet = [...ranked].sort((a, b) => a.avg - b.avg || a.wd - b.wd || a.h - b.h).slice(0, 6);
+  const rankLi = (p, color) => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span>
+    <span><span class="num">Ø ${fmt1(p.avg)}</span> ${pill(p.avg, true)}</span>
+    <span class="bar"><i style="width:${p.avg / maxAvg * 100}%;background:${color}"></i></span></li>`;
+
+  const byWd = bucketStats(q, r => r.wd);
+  const maxRow = rows.reduce((a, b) => (b.v > a.v ? b : a), rows[0] || last);
 
   el.innerHTML = `
-  <section class="card span-3">
-    <div class="label">Jetzt</div>
-    <div class="big">${Math.round(last.v)} %</div>
-    <div class="pill"><span class="dot" style="background:${lv.c}"></span>${lv.t}</div>
-    <div class="small" style="margin-top:6px">${last.count != null ? `${last.count} von ${last.max} Personen · ` : ''}vor ${ageMin < 1 ? '< 1' : ageMin} Min.</div>
-  </section>
-  <section class="card span-3">
-    <div class="label">Normal um diese Zeit</div>
-    <div class="big">${typicalNow ? Math.round(typicalNow.avg) + ' %' : '–'}</div>
-    <div class="small">${cmp == null ? 'noch zu wenig Daten' : (Math.abs(cmp) < 5 ? 'gerade ganz normal' : cmp > 0 ? `heute ${Math.round(cmp)} Punkte voller` : `heute ${Math.round(-cmp)} Punkte leerer`)}</div>
-  </section>
-  <section class="card span-3">
-    <div class="label">Nächste ruhige Phase heute</div>
-    <div class="big">${nextQuiet ? hh(nextQuiet.s / 4) : '–'}</div>
-    <div class="small">${nextQuiet ? `typisch ${Math.round(nextQuiet.avg)} %` : 'heute keine mehr erwartet'}</div>
-  </section>
-  <section class="card span-3">
-    <div class="label">Datenbasis</div>
-    <div class="big">${nDays} ${nDays === 1 ? 'Tag' : 'Tage'}</div>
-    <div class="small">${rows.length.toLocaleString('de-DE')} Messungen · Ø ${Math.round(overall)} %</div>
-  </section>
+  <section class="card span-4"><div class="label">Jetzt</div>${nowCard}</section>
+  <section class="card span-4"><div class="label">Normal um diese Zeit</div>${typCard}</section>
+  <section class="card span-4"><div class="label">Nächste ruhige Phase</div>${quietCard}</section>
 
   <section class="card span-12">
-    <h2>Wann ist es voll? Ø Auslastung nach Wochentag und Uhrzeit</h2>
-    <p class="sub">Dunkler = voller. Fahre über ein Feld für Details.</p>
+    <h2>Wann ist es voll? Ø eingecheckte Personen nach Wochentag und Uhrzeit</h2>
+    <p class="sub">Öffnungszeit ${hh(OPEN)}–${hh(CLOSE)} Uhr. Dunkler = voller. Fahre über ein Feld für Details.</p>
     <div class="heat-wrap"><div class="heat" id="heat"></div></div>
     <div class="scale">wenig <i style="background:var(--seq-1)"></i><i style="background:var(--seq-3)"></i><i style="background:var(--seq-5)"></i><i style="background:var(--seq-7)"></i> viel</div>
   </section>
 
   <section class="card span-8">
     <h2>Tagesverlauf</h2>
-    <p class="sub">Durchschnitt in 15-Minuten-Schritten, verglichen mit allen Tagen</p>
+    <p class="sub">Ø eingecheckte Personen in 15-Minuten-Schritten</p>
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
-      <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span></div>
+      <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span><span><i class="swatch dash"></i>Grenzen wenig / viel</span></div>
       <select id="daySel" aria-label="Wochentag">${DAYS_LONG.map((d, i) => `<option value="${i}" ${i === now.wd ? 'selected' : ''}>${d}</option>`).join('')}</select>
     </div>
     <div class="chart-box"><canvas id="profile"></canvas></div>
@@ -308,39 +371,40 @@ function render() {
 
   <section class="card span-4">
     <h2>Wochentage</h2>
-    <p class="sub">Ø Auslastung während der Öffnungszeit</p>
+    <p class="sub">Ø eingecheckte Personen während der Öffnungszeit</p>
     <div class="chart-box"><canvas id="weekdays"></canvas></div>
   </section>
 
   <section class="card span-6">
     <h2>Echte Stoßzeiten</h2>
     <p class="sub">Die vollsten Stunden der Woche</p>
-    <ol class="rank">${peaks.map(p => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span><span class="num">${Math.round(p.avg)} %</span><span class="bar"><i style="width:${p.avg}%;background:var(--s2)"></i></span></li>`).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
+    <ol class="rank">${peaks.map(p => rankLi(p, 'var(--s2)')).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
   </section>
   <section class="card span-6">
     <h2>Beste Trainingszeiten</h2>
     <p class="sub">Die leersten Stunden während der Öffnungszeit</p>
-    <ol class="rank">${quiet.map(p => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span><span class="num">${Math.round(p.avg)} %</span><span class="bar"><i style="width:${p.avg}%;background:var(--s1)"></i></span></li>`).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
+    <ol class="rank">${quiet.map(p => rankLi(p, 'var(--s1)')).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
   </section>
 
   <section class="card span-12">
     <h2>Verlauf</h2>
-    <p class="sub">Alle Messwerte im gewählten Zeitraum · Rekord: ${Math.round(maxRow.v)} % am ${fmtTime(maxRow.d)}</p>
+    <p class="sub">Alle Messwerte während der Öffnungszeit · Höchstwert: ${maxRow.v} Personen am ${fmtTime(maxRow.d)}</p>
     <div class="chart-box"><canvas id="timeline"></canvas></div>
     <details style="margin-top:10px"><summary>Tabelle: Ø je Wochentag und Stunde</summary><div style="overflow-x:auto" id="tbl"></div></details>
   </section>`;
 
   // Heatmap
+  const hours = []; for (let h = OPEN; h < CLOSE; h++) hours.push(h);
   const heat = document.getElementById('heat');
-  const hours = []; for (let h = hMin; h <= hMax; h++) hours.push(h);
   heat.style.setProperty('--cols', hours.length);
-  const maxAvg = Math.max(1, ...[...byWdH.values()].map(b => b.avg));
+  const heatMax = Math.max(1, ...[...byWdH.values()].map(b => b.avg));
   let html = '<div></div>' + hours.map(h => `<div>${h}</div>`).join('');
   for (let wd = 0; wd < 7; wd++) {
     html += `<div class="row">${DAYS[wd]}</div>`;
     for (const h of hours) {
       const b = byWdH.get(`${wd}|${h}`);
-      html += `<div class="cell" ${b ? `style="background:${seqColor(b.avg, maxAvg)}" data-t="${DAYS_LONG[wd]} ${hh(h)}–${hh(h + 1)}<br><b>Ø ${Math.round(b.avg)} %</b> · max ${Math.round(b.max)} % · ${b.n} Werte"` : 'data-t="keine Daten"'}></div>`;
+      const l = b && level(b.avg);
+      html += `<div class="cell" ${b ? `style="background:${seqColor(b.avg, heatMax)}" data-t="${DAYS_LONG[wd]} ${hh(h)}–${hh(h + 1)}<br><b>Ø ${fmt1(b.avg)} Personen</b>${l ? ' · ' + l.t : ''}<br>max ${fmt1(b.max)} · ${b.n} Werte"` : 'data-t="keine Daten"'}></div>`;
     }
   }
   heat.innerHTML = html;
@@ -350,35 +414,34 @@ function render() {
     c.addEventListener('mouseleave', hideTip);
   });
 
-  // Tabelle
-  document.getElementById('tbl').innerHTML = `<table><tr><th>Uhrzeit</th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${hours.map(h => `<tr><td>${hh(h)}</td>${DAYS.map((_, wd) => { const b = byWdH.get(`${wd}|${h}`); return `<td>${b ? Math.round(b.avg) : '–'}</td>`; }).join('')}</tr>`).join('')}</table>`;
+  document.getElementById('tbl').innerHTML = `<table><tr><th>Uhrzeit</th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${hours.map(h => `<tr><td>${hh(h)}</td>${DAYS.map((_, wd) => { const b = byWdH.get(`${wd}|${h}`); return `<td>${b ? fmt1(b.avg) : '–'}</td>`; }).join('')}</tr>`).join('')}</table>`;
 
-  // Chart-Defaults
+  // Charts
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
   Chart.defaults.font.size = 12;
   Chart.defaults.color = css('--muted');
   const grid = { color: css('--grid'), drawTicks: false };
-  const tooltip = { backgroundColor: css('--text'), titleColor: css('--surface'), bodyColor: css('--surface'), padding: 8, cornerRadius: 6, displayColors: true, boxPadding: 4 };
-  const yPct = { min: 0, suggestedMax: 100, grid, border: { display: false }, ticks: { callback: v => v + ' %', stepSize: 25, padding: 6 } };
+  const tooltip = { backgroundColor: css('--text'), titleColor: css('--surface'), bodyColor: css('--surface'), padding: 8, cornerRadius: 6, boxPadding: 4 };
+  const dataMax = Math.max(...rows.map(r => r.v), LV ? LV.t2 + 1 : 1);
+  const yP = { min: 0, suggestedMax: Math.ceil(dataMax * 1.1), grid, border: { display: false }, ticks: { padding: 6, precision: 0 } };
 
-  // Tagesprofil
-  const slots = []; for (let s = hMin * 4; s < (hMax + 1) * 4; s++) slots.push(s);
+  // Tagesverlauf (15-Min-Raster, nur Oeffnungszeit)
+  const slots = []; for (let s = OPEN * 4; s < CLOSE * 4; s++) slots.push(s);
+  const byWdSlot = bucketStats(q, r => `${r.wd}|${r.slot}`);
   const allSlot = bucketStats(q, r => r.slot);
   const profileData = wd => slots.map(s => { const b = byWdSlot.get(`${wd}|${s}`); return b ? +b.avg.toFixed(1) : null; });
   const profile = new Chart(document.getElementById('profile'), {
     type: 'line',
-    data: {
-      labels: slots.map(s => hh(s / 4)),
-      datasets: [
-        { label: DAYS_LONG[now.wd], data: profileData(now.wd), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true },
-        { label: 'Alle Tage', data: slots.map(s => { const b = allSlot.get(s); return b ? +b.avg.toFixed(1) : null; }), borderColor: css('--s2'), backgroundColor: css('--s2'), borderWidth: 2, borderDash: [5, 4], pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true }
-      ]
-    },
+    data: { labels: slots.map(s => hh(s / 4)), datasets: [
+      { label: DAYS_LONG[now.wd], data: profileData(now.wd), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true },
+      { label: 'Alle Tage', data: slots.map(s => { const b = allSlot.get(s); return b ? +b.avg.toFixed(1) : null; }), borderColor: css('--s2'), backgroundColor: css('--s2'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true }
+    ] },
     options: {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '–' : Math.round(c.parsed.y) + ' %'}` } } },
-      scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => slots[i] % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: yPct }
-    }
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '–' : fmt1(c.parsed.y) + ' Personen'}` } } },
+      scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => (slots[i] - OPEN * 4) % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: yP }
+    },
+    plugins: [levelLines]
   });
   charts.push(profile);
   const dayName = document.getElementById('dayName');
@@ -397,25 +460,36 @@ function render() {
     data: { labels: DAYS, datasets: [{ data: DAYS.map((_, i) => byWd.get(i) ? +byWd.get(i).avg.toFixed(1) : 0), backgroundColor: css('--s1'), borderRadius: { topLeft: 4, topRight: 4 }, borderSkipped: 'bottom', maxBarThickness: 28 }] },
     options: {
       maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { title: c => DAYS_LONG[c[0].dataIndex], label: c => `Ø ${Math.round(c.parsed.y)} %` } } },
-      scales: { x: { grid: { display: false } }, y: { ...yPct, suggestedMax: Math.min(100, Math.ceil(Math.max(...[...byWd.values()].map(b => b.avg), 10) / 10) * 10 + 10) } }
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { title: c => DAYS_LONG[c[0].dataIndex], label: c => `Ø ${fmt1(c.parsed.y)} Personen` } } },
+      scales: { x: { grid: { display: false } }, y: { ...yP, suggestedMax: Math.ceil(Math.max(...[...byWd.values()].map(b => b.avg), 1) * 1.3) } }
     }
   }));
 
-  // Zeitverlauf
+  // Verlauf: Nacht-Luecken nicht verbinden
   const step = Math.max(1, Math.floor(rows.length / 3000));
-  const tl = rows.filter((_, i) => i % step === 0);
+  const tl = [];
+  rows.filter((_, i) => i % step === 0).forEach((r, i, arr) => {
+    if (i && r.d - arr[i - 1].d > 3 * 3600e3) tl.push({ d: null, v: null });
+    tl.push(r);
+  });
   charts.push(new Chart(document.getElementById('timeline'), {
     type: 'line',
-    data: { labels: tl.map(r => fmtTime(r.d)), datasets: [{ label: 'Auslastung', data: tl.map(r => r.v), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.2 }] },
+    data: { labels: tl.map(r => r.d ? fmtTime(r.d) : ''), datasets: [{ label: 'Personen', data: tl.map(r => r.v), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.2, spanGaps: false }] },
     options: {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, callbacks: { label: c => `${Math.round(c.parsed.y)} %` } } },
-      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, callback: (v, i) => tl[i] ? tl[i].d.toLocaleDateString('de-DE', { timeZone: TZ, day: '2-digit', month: '2-digit' }) : '' } }, y: yPct }
-    }
+      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, filter: c => c.parsed.y != null, callbacks: { label: c => `${c.parsed.y} Personen` } } },
+      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, callback: (v, i) => tl[i] && tl[i].d ? tl[i].d.toLocaleDateString('de-DE', { timeZone: TZ, day: '2-digit', month: '2-digit' }) : '' } }, y: yP }
+    },
+    plugins: [levelLines]
   }));
 
-  document.getElementById('updated').textContent = `Letzte Messung: ${fmtTime(last.d)} · aktualisiert sich alle 5 Min.`;
+  // Fusszeile: Datenbasis
+  const nDays = new Set(rows.map(r => r.day)).size;
+  const avg = q.length ? q.reduce((s, r) => s + r.v, 0) / q.length : 0;
+  document.getElementById('footer').innerHTML = `
+    <b>Datenbasis:</b> ${nDays} ${nDays === 1 ? 'Tag' : 'Tage'} · ${rows.length.toLocaleString('de-DE')} Messungen im Zeitraum · Ø ${fmt1(avg)} Personen · letzte Messung ${fmtTime(last.d)}<br>
+    <b>Einstufung:</b> ${LV ? `aus ${LV.n.toLocaleString('de-DE')} Werten aller bisherigen Messungen – unteres Drittel = wenig los (≤ ${fmt1(LV.t1)} Personen), oberes Drittel = viel los (&gt; ${fmt1(LV.t2)} Personen), dazwischen normal.` : `ab ${MIN_FOR_LEVELS} Messungen.`}<br>
+    <b>Hinweis:</b> Gezählt werden Check-ins. Wer nicht auscheckt, wird erst nach ca. 2 Std. automatisch abgemeldet – die tatsächliche Zahl kann darunter liegen.`;
 }
 
 document.getElementById('range').addEventListener('click', e => {
@@ -428,8 +502,7 @@ async function refresh() {
   try { ALL = await load(); render(); }
   catch (err) {
     console.error(err);
-    document.getElementById('content').innerHTML = `<div class="card span-12 msg">Noch keine Daten gefunden.<br><span class="small">Gesucht unter <code>${dataBase()}</code>. Läuft der Sammler schon? (GitHub → Actions)</span></div>`;
-    document.getElementById('updated').textContent = '';
+    document.getElementById('content').innerHTML = `<div class="card span-12 msg">Noch keine Daten gefunden.<br><span class="small">Gesucht unter <code>${dataBase()}</code>.</span></div>`;
   }
 }
 refresh();
