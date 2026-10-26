@@ -66,7 +66,6 @@ h2 { font-size: 15px; margin: 0 0 2px; }
 .legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; flex-wrap: wrap; }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .swatch { width: 14px; height: 3px; border-radius: 2px; }
-.swatch.dash { background: repeating-linear-gradient(90deg, var(--muted) 0 4px, transparent 4px 7px); height: 2px; }
 .heat-wrap { overflow-x: auto; }
 .heat { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(22px, 1fr)); gap: 2px; min-width: 520px; }
 .heat div { font-size: 11px; color: var(--muted); text-align: center; }
@@ -146,7 +145,7 @@ function local(d) {
 const fmtTime = d => d.toLocaleString('de-DE', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const hh = h => String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.round((h % 1) * 60)).padStart(2, '0');
 const isOpenHour = h => h >= OPEN && h < CLOSE;
-const fmt1 = v => v.toLocaleString('de-DE', { maximumFractionDigits: 1 });
+const fmt1 = v => String(Math.round(v) || 0);   // alle Durchschnittswerte als ganze Zahl
 
 // ---------- Laden ----------
 async function load() {
@@ -208,6 +207,7 @@ function computeLevels(q) {
 }
 function level(v) {
   if (!LV || v == null) return null;
+  v = Math.round(v);                // Einstufung passend zur angezeigten ganzen Zahl
   if (v <= LV.t1) return { k: 0, t: 'Wenig los', c: 'var(--good)' };
   if (v > LV.t2) return { k: 2, t: 'Viel los', c: 'var(--critical)' };
   return { k: 1, t: 'Normal', c: 'var(--warning)' };
@@ -242,25 +242,6 @@ function moveTip(e) {
   tip.style.top = (e.clientY - tip.offsetHeight - 10) + 'px';
 }
 function hideTip() { tip.style.opacity = 0; }
-
-// Gestrichelte Grenzlinien "wenig"/"viel" in Diagrammen
-const levelLines = {
-  id: 'levelLines',
-  afterDatasetsDraw(chart) {
-    if (!LV) return;
-    const { ctx, chartArea: a, scales: { y } } = chart;
-    ctx.save();
-    ctx.setLineDash([4, 4]); ctx.lineWidth = 1; ctx.strokeStyle = css('--muted');
-    ctx.fillStyle = css('--muted'); ctx.font = '11px Inter, system-ui, sans-serif'; ctx.textAlign = 'right';
-    for (const [val, txt] of [[LV.t1, 'wenig ≤ ' + fmt1(LV.t1)], [LV.t2, 'viel > ' + fmt1(LV.t2)]]) {
-      const py = y.getPixelForValue(val);
-      if (py < a.top || py > a.bottom) continue;
-      ctx.beginPath(); ctx.moveTo(a.left, py); ctx.lineTo(a.right, py); ctx.stroke();
-      ctx.fillText(txt, a.right - 2, py - 4);
-    }
-    ctx.restore();
-  }
-};
 
 // ---------- Rendering ----------
 let ALL = [], charts = [], days = 42;
@@ -304,8 +285,8 @@ function render() {
   if (!tNow) typCard = `<div class="big">–</div><div class="small">${nowOpen ? 'noch zu wenig Daten' : 'außerhalb der Öffnungszeit'}</div>`;
   else {
     const diff = fresh ? last.v - tNow.avg : null;
-    const cmp = diff == null ? '' : Math.abs(diff) < 1.5 ? 'gerade ganz normal' : diff > 0 ? `heute ${fmt1(diff)} mehr als üblich` : `heute ${fmt1(-diff)} weniger als üblich`;
-    typCard = `<div class="big">${fmt1(tNow.avg)} <small>Ø Personen</small></div>${pill(tNow.avg)}
+    const cmp = diff == null ? '' : Math.abs(Math.round(diff)) <= 1 ? 'gerade ganz normal' : diff > 0 ? `heute ${fmt1(diff)} mehr als üblich` : `heute ${fmt1(-diff)} weniger als üblich`;
+    typCard = `<div class="big">Ø ${fmt1(tNow.avg)} <small>Personen</small></div>${pill(tNow.avg)}
       <div class="small" style="margin-top:6px">${DAYS_LONG[now.wd]}s um ${hh(nowS30 / 2)}${cmp ? ' · ' + cmp : ''}</div>`;
   }
 
@@ -341,11 +322,10 @@ function render() {
   const peaks = [...ranked].sort((a, b) => b.avg - a.avg).slice(0, 6);
   const quiet = [...ranked].sort((a, b) => a.avg - b.avg || a.wd - b.wd || a.h - b.h).slice(0, 6);
   const rankLi = (p, color) => `<li><span>${DAYS_LONG[p.wd]}, ${hh(p.h)}–${hh(p.h + 1)}</span>
-    <span><span class="num">Ø ${fmt1(p.avg)}</span> ${pill(p.avg, true)}</span>
+    <span class="num">Ø ${fmt1(p.avg)}</span>
     <span class="bar"><i style="width:${p.avg / maxAvg * 100}%;background:${color}"></i></span></li>`;
 
   const byWd = bucketStats(q, r => r.wd);
-  const maxRow = rows.reduce((a, b) => (b.v > a.v ? b : a), rows[0] || last);
 
   el.innerHTML = `
   <section class="card span-4"><div class="label">Jetzt</div>${nowCard}</section>
@@ -363,7 +343,7 @@ function render() {
     <h2>Tagesverlauf</h2>
     <p class="sub">Ø eingecheckte Personen in 15-Minuten-Schritten</p>
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
-      <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span><span><i class="swatch dash"></i>Grenzen wenig / viel</span></div>
+      <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span></div>
       <select id="daySel" aria-label="Wochentag">${DAYS_LONG.map((d, i) => `<option value="${i}" ${i === now.wd ? 'selected' : ''}>${d}</option>`).join('')}</select>
     </div>
     <div class="chart-box"><canvas id="profile"></canvas></div>
@@ -384,13 +364,6 @@ function render() {
     <h2>Beste Trainingszeiten</h2>
     <p class="sub">Die leersten Stunden während der Öffnungszeit</p>
     <ol class="rank">${quiet.map(p => rankLi(p, 'var(--s1)')).join('') || '<li>Noch zu wenig Daten</li>'}</ol>
-  </section>
-
-  <section class="card span-12">
-    <h2>Verlauf</h2>
-    <p class="sub">Alle Messwerte während der Öffnungszeit · Höchstwert: ${maxRow.v} Personen am ${fmtTime(maxRow.d)}</p>
-    <div class="chart-box"><canvas id="timeline"></canvas></div>
-    <details style="margin-top:10px"><summary>Tabelle: Ø je Wochentag und Stunde</summary><div style="overflow-x:auto" id="tbl"></div></details>
   </section>`;
 
   // Heatmap
@@ -414,7 +387,6 @@ function render() {
     c.addEventListener('mouseleave', hideTip);
   });
 
-  document.getElementById('tbl').innerHTML = `<table><tr><th>Uhrzeit</th>${DAYS.map(d => `<th>${d}</th>`).join('')}</tr>${hours.map(h => `<tr><td>${hh(h)}</td>${DAYS.map((_, wd) => { const b = byWdH.get(`${wd}|${h}`); return `<td>${b ? fmt1(b.avg) : '–'}</td>`; }).join('')}</tr>`).join('')}</table>`;
 
   // Charts
   Chart.defaults.font.family = 'Inter, system-ui, sans-serif';
@@ -440,8 +412,7 @@ function render() {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '–' : fmt1(c.parsed.y) + ' Personen'}` } } },
       scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => (slots[i] - OPEN * 4) % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: yP }
-    },
-    plugins: [levelLines]
+    }
   });
   charts.push(profile);
   const dayName = document.getElementById('dayName');
@@ -465,31 +436,14 @@ function render() {
     }
   }));
 
-  // Verlauf: Nacht-Luecken nicht verbinden
-  const step = Math.max(1, Math.floor(rows.length / 3000));
-  const tl = [];
-  rows.filter((_, i) => i % step === 0).forEach((r, i, arr) => {
-    if (i && r.d - arr[i - 1].d > 3 * 3600e3) tl.push({ d: null, v: null });
-    tl.push(r);
-  });
-  charts.push(new Chart(document.getElementById('timeline'), {
-    type: 'line',
-    data: { labels: tl.map(r => r.d ? fmtTime(r.d) : ''), datasets: [{ label: 'Personen', data: tl.map(r => r.v), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 4, tension: 0.2, spanGaps: false }] },
-    options: {
-      maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { ...tooltip, displayColors: false, filter: c => c.parsed.y != null, callbacks: { label: c => `${c.parsed.y} Personen` } } },
-      scales: { x: { grid: { display: false }, ticks: { maxTicksLimit: 8, maxRotation: 0, callback: (v, i) => tl[i] && tl[i].d ? tl[i].d.toLocaleDateString('de-DE', { timeZone: TZ, day: '2-digit', month: '2-digit' }) : '' } }, y: yP }
-    },
-    plugins: [levelLines]
-  }));
 
   // Fusszeile: Datenbasis
   const nDays = new Set(rows.map(r => r.day)).size;
   const avg = q.length ? q.reduce((s, r) => s + r.v, 0) / q.length : 0;
   document.getElementById('footer').innerHTML = `
     <b>Datenbasis:</b> ${nDays} ${nDays === 1 ? 'Tag' : 'Tage'} · ${rows.length.toLocaleString('de-DE')} Messungen im Zeitraum · Ø ${fmt1(avg)} Personen · letzte Messung ${fmtTime(last.d)}<br>
-    <b>Einstufung:</b> ${LV ? `aus ${LV.n.toLocaleString('de-DE')} Werten aller bisherigen Messungen – unteres Drittel = wenig los (≤ ${fmt1(LV.t1)} Personen), oberes Drittel = viel los (&gt; ${fmt1(LV.t2)} Personen), dazwischen normal.` : `ab ${MIN_FOR_LEVELS} Messungen.`}<br>
-    <b>Hinweis:</b> Gezählt werden Check-ins. Wer nicht auscheckt, wird erst nach ca. 2 Std. automatisch abgemeldet – die tatsächliche Zahl kann darunter liegen.`;
+    <b>Einstufung:</b> ${LV ? `aus ${LV.n.toLocaleString('de-DE')} Werten aller bisherigen Messungen – unteres Drittel = wenig los (bis ${Math.floor(LV.t1)} Personen), oberes Drittel = viel los (ab ${Math.floor(LV.t2) + 1} Personen), dazwischen normal.` : `ab ${MIN_FOR_LEVELS} Messungen.`}<br>
+    <b>Hinweis:</b> Auschecken ist nicht möglich – jede Person bleibt nach dem Check-in systembedingt 2 Stunden eingecheckt. Die Zahl entspricht also allen Check-ins der letzten 2 Stunden; tatsächlich anwesend können weniger sein.`;
 }
 
 document.getElementById('range').addEventListener('click', e => {
