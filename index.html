@@ -115,6 +115,7 @@ footer b { color: var(--text-2); font-weight: 500; }
 // ---------- Einstellungen ----------
 const TZ = 'Europe/Berlin';
 const OPEN = 6, CLOSE = 23;      // Oeffnungszeiten (volle Stunden): 06:00 bis 23:00
+const SMOOTH_MIN = 45;            // Glaettung Tagesverlauf in Minuten (groesser = weicher)
 const MIN_SAMPLES = 3;           // Mindestanzahl Werte pro Stunde fuer Ranglisten
 const MIN_FOR_LEVELS = 30;       // Mindestanzahl Werte fuer wenig/normal/viel
 const FALLBACK_MAX = 40;         // nur fuer alte Zeilen ohne Personenzahl
@@ -341,7 +342,7 @@ function render() {
 
   <section class="card span-8">
     <h2>Tagesverlauf</h2>
-    <p class="sub">Ø eingecheckte Personen in 15-Minuten-Schritten</p>
+    <p class="sub">Ø eingecheckte Personen im Tagesverlauf, geglättet</p>
     <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
       <div class="legend"><span><i class="swatch" style="background:var(--s1)"></i><b id="dayName"></b></span><span><i class="swatch" style="background:var(--s2)"></i>Alle Tage</span></div>
       <select id="daySel" aria-label="Wochentag">${DAYS_LONG.map((d, i) => `<option value="${i}" ${i === now.wd ? 'selected' : ''}>${d}</option>`).join('')}</select>
@@ -401,17 +402,31 @@ function render() {
   const slots = []; for (let s = OPEN * 4; s < CLOSE * 4; s++) slots.push(s);
   const byWdSlot = bucketStats(q, r => `${r.wd}|${r.slot}`);
   const allSlot = bucketStats(q, r => r.slot);
-  const profileData = wd => slots.map(s => { const b = byWdSlot.get(`${wd}|${s}`); return b ? +b.avg.toFixed(1) : null; });
+  // Glaettung: gewichteter Gauss-Mittelwert ueber benachbarte Viertelstunden (Breite SMOOTH_MIN).
+  // Viertelstunden mit mehr Messungen zaehlen staerker, Luecken werden dabei mit aufgefuellt.
+  const sigma = SMOOTH_MIN / 15, reach = Math.ceil(sigma * 3);
+  const smooth = get => slots.map(s => {
+    let sw = 0, sv = 0;
+    for (let k = -reach; k <= reach; k++) {
+      const b = get(s + k);
+      if (!b || s + k < OPEN * 4 || s + k >= CLOSE * 4) continue;
+      const w = Math.exp(-(k * k) / (2 * sigma * sigma)) * b.n;
+      sw += w; sv += w * b.avg;
+    }
+    return sw ? +(sv / sw).toFixed(2) : null;
+  });
+  const profileData = wd => smooth(s => byWdSlot.get(`${wd}|${s}`));
+  const profileMax = Math.ceil(Math.max(2, ...[0, 1, 2, 3, 4, 5, 6].flatMap(wd => profileData(wd)).filter(v => v != null)) * 1.15);
   const profile = new Chart(document.getElementById('profile'), {
     type: 'line',
     data: { labels: slots.map(s => hh(s / 4)), datasets: [
-      { label: DAYS_LONG[now.wd], data: profileData(now.wd), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true },
-      { label: 'Alle Tage', data: slots.map(s => { const b = allSlot.get(s); return b ? +b.avg.toFixed(1) : null; }), borderColor: css('--s2'), backgroundColor: css('--s2'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, tension: 0.3, spanGaps: true }
+      { label: DAYS_LONG[now.wd], data: profileData(now.wd), borderColor: css('--s1'), backgroundColor: css('--s1'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, cubicInterpolationMode: 'monotone', spanGaps: true },
+      { label: 'Alle Tage', data: smooth(s => allSlot.get(s)), borderColor: css('--s2'), backgroundColor: css('--s2'), borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, cubicInterpolationMode: 'monotone', spanGaps: true }
     ] },
     options: {
       maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
       plugins: { legend: { display: false }, tooltip: { ...tooltip, callbacks: { label: c => ` ${c.dataset.label}: ${c.parsed.y == null ? '–' : fmt1(c.parsed.y) + ' Personen'}` } } },
-      scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => (slots[i] - OPEN * 4) % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: yP }
+      scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => (slots[i] - OPEN * 4) % (innerWidth < 600 ? 16 : 8) === 0 ? hh(slots[i] / 4) : '' } }, y: { ...yP, suggestedMax: profileMax } }
     }
   });
   charts.push(profile);
